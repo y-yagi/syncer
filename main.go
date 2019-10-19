@@ -7,6 +7,7 @@ import (
 	"log/syslog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/y-yagi/goext/osext"
 	"gopkg.in/fsnotify.v1"
@@ -25,6 +26,9 @@ func main() {
 	}
 	defer logger.Close()
 
+	changed := []string{}
+	syncDuration := 10 * time.Minute
+
 	targets := map[string]string{
 		"/home/yaginuma/.histfile": "/home/yaginuma/Dropbox/backup/.histfile",
 	}
@@ -37,18 +41,23 @@ func main() {
 				if !ok {
 					return
 				}
-				dest := targets[event.Name]
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					err := copyFile(event.Name, dest)
-					if err != nil {
-						logger.Err(fmt.Sprintf("%v", err))
-					}
+					changed = append(changed, event.Name)
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
 				logger.Err(fmt.Sprintf("%v", err))
+			case <-time.After(syncDuration):
+				for _, src := range changed {
+					dest := targets[src]
+					err := copyFile(src, dest)
+					if err != nil {
+						logger.Err(fmt.Sprintf("%v", err))
+					}
+				}
+				changed = []string{}
 			}
 		}
 	}()
