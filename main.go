@@ -16,12 +16,12 @@ import (
 
 const cmd = "syncer"
 
-type Path struct {
+type path struct {
 	From string
 	To   string
 }
 type config struct {
-	Paths []Path `toml:"path"`
+	Paths []path `toml:"path"`
 }
 
 var cfg config
@@ -71,6 +71,7 @@ func main() {
 				if !ok {
 					return
 				}
+				logger.Err(fmt.Sprintf("%v", err))
 			case <-time.After(syncDuration):
 				for _, src := range changed {
 					err := copyFile(src, paths[src])
