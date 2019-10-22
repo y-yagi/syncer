@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -40,6 +41,21 @@ func init() {
 }
 
 func main() {
+	var config bool
+
+	flags := flag.NewFlagSet(cmd, flag.ExitOnError)
+	flags.BoolVar(&config, "c", false, "Edit config.")
+	flags.Parse(os.Args[1:])
+
+	if config {
+		if err := configure.Edit(cmd, "vim"); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		return
+	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
