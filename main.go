@@ -9,9 +9,35 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/y-yagi/configure"
 	"github.com/y-yagi/goext/osext"
 	"gopkg.in/fsnotify.v1"
 )
+
+const cmd = "syncer"
+
+type Path struct {
+	From string
+	To   string
+}
+type config struct {
+	Paths []Path `toml:"path"`
+}
+
+var cfg config
+
+func init() {
+	err := configure.Load(cmd, &cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(cfg.Paths) == 0 {
+		fmt.Fprintf(os.Stderr, "Please specify paths.\n")
+		os.Exit(1)
+	}
+}
 
 func main() {
 	watcher, err := fsnotify.NewWatcher()
@@ -27,11 +53,8 @@ func main() {
 	defer logger.Close()
 
 	changed := []string{}
+	paths := map[string]string{}
 	syncDuration := 10 * time.Minute
-
-	targets := map[string]string{
-		"/home/yaginuma/.histfile": "/home/yaginuma/Dropbox/backup/.histfile",
-	}
 
 	done := make(chan bool)
 	go func() {
@@ -48,11 +71,9 @@ func main() {
 				if !ok {
 					return
 				}
-				logger.Err(fmt.Sprintf("%v", err))
 			case <-time.After(syncDuration):
 				for _, src := range changed {
-					dest := targets[src]
-					err := copyFile(src, dest)
+					err := copyFile(src, paths[src])
 					if err != nil {
 						logger.Err(fmt.Sprintf("%v", err))
 					}
@@ -62,11 +83,12 @@ func main() {
 		}
 	}()
 
-	for s, _ := range targets {
-		err = watcher.Add(s)
+	for _, p := range cfg.Paths {
+		err = watcher.Add(p.From)
 		if err != nil {
 			log.Fatal(err)
 		}
+		paths[p.From] = p.To
 	}
 	<-done
 }
