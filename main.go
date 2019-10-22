@@ -16,12 +16,12 @@ import (
 
 const cmd = "syncer"
 
-type Path struct {
+type path struct {
 	From string
 	To   string
 }
 type config struct {
-	Paths []Path `toml:"path"`
+	Paths []path `toml:"path"`
 }
 
 var cfg config
