@@ -62,7 +62,7 @@ func main() {
 	}
 	defer watcher.Close()
 
-	logger, err := syslog.New(syslog.LOG_WARNING|syslog.LOG_DAEMON, "syncer")
+	logger, err := syslog.New(syslog.LOG_WARNING|syslog.LOG_DAEMON, cmd)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,6 +107,9 @@ func main() {
 		}
 		paths[p.From] = p.To
 	}
+
+	logger.Info(fmt.Sprintf("Watch start: %+v", cfg.Paths))
+
 	<-done
 }
 
