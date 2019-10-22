@@ -71,6 +71,7 @@ func main() {
 				if !ok {
 					return
 				}
+				logger.Err(fmt.Sprintf("%v", err))
 			case <-time.After(syncDuration):
 				for _, src := range changed {
 					err := copyFile(src, paths[src])
